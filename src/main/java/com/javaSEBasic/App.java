@@ -15,7 +15,8 @@ public class App
         SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
         final ArchiveHandler archiveHandler = new ArchiveHandler();
         final ZipHandler zipHandler = new ZipHandler();
-        zipHandler.zipDirectory("testDirectory.zip",directory);
+        zipHandler.unzip(path);
+//        zipHandler.zipDirectory("testDirectory.zip",directory);
 //        final File myDir = new File(directory);
 //        final File myFile = new File(file);
 //        archiveHandler.zipFile(myDir,myFile);

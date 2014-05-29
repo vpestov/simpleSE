@@ -5,6 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -14,27 +18,35 @@ public class ZipHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZipHandler.class);
 
+    public static ArrayList<String> tempZipStorage = new ArrayList<String>();
+    public static ArrayList<String> folderZipStructure = new ArrayList<String>();
+
     public void unzip(String path) {
         Enumeration entries;
         ZipFile zipFile;
 
         try {
             zipFile = new ZipFile(path);
-
             entries = zipFile.entries();
 
             while (entries.hasMoreElements()) {
                 ZipEntry entry = (ZipEntry) entries.nextElement();
 
                 if (entry.isDirectory()) {
-                    // Assume directories are stored parents first then children.
-//                    System.err.println("Extracting directory: " + entry.getName());
-                    // This is not robust, just for demonstration purposes.
                     (new File(entry.getName())).mkdir();
                     continue;
                 }
 
-                System.err.println("Extracting file: " + entry.getName());
+                addZipPath(path,entry.getName());
+                String s = getFileExtension(entry.getName());
+//                if (s.equals("application/x-zip-compressed")) {
+//                    unzip("D:/projects/simpleSE/inputs/"+entry.getName());
+//
+//                } else if (s.equals("application/x-gzip")) {
+//                    ungzip();
+//
+//                }
+
                 copyInputStream(zipFile.getInputStream(entry),
                         new BufferedOutputStream(new FileOutputStream(entry.getName())));
             }
@@ -45,6 +57,16 @@ public class ZipHandler {
             ioe.printStackTrace();
             return;
         }
+    }
+
+    private void addZipPath (String zipPath, String innerZipPath ){
+        final String path = zipPath.substring(0,zipPath.indexOf(Paths.get(zipPath).getFileName().toString()));
+        String t = path+"%s".format(innerZipPath);
+    }
+
+    private String getFileExtension (String pathToFile) throws IOException {
+        final Path path = Paths.get(pathToFile);
+        return Files.probeContentType(path);
     }
 
     public void zipDirectory(String zipFileName, String dir){
