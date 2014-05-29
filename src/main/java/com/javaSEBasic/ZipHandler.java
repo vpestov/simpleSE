@@ -79,9 +79,9 @@ public class ZipHandler {
                 continue;
             }
             try {
-//                final String path = currentFile.getAbsolutePath();
-                in = new FileInputStream(currentFile);
-                zos.putNextEntry(new ZipEntry(currentFile.getName()));
+                final String path = currentFile.getAbsolutePath();
+                in = new FileInputStream(path);
+                zos.putNextEntry(new ZipEntry(path));
                 int len;
                 while ((len = in.read(tmpBuf)) > 0) {
                     zos.write(tmpBuf, 0, len);
