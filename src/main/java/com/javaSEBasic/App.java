@@ -4,7 +4,8 @@ import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J;
 
 public class App 
 {
-    private static final String path = "D:/projects/simpleSE/inputs.zip";
+//    private static final String path = "D:/projects/simpleSE/inputs.zip";
+    private static final String path = "D:/testData/testInputs.zip";
 
     private static final String directory = "D:/projects/simpleSE/inputs2";
     private static final String file = "D:/projects/simpleSE/logstest.zip";

@@ -8,8 +8,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Enumeration;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -18,8 +17,14 @@ public class ZipHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZipHandler.class);
 
-    public static ArrayList<String> tempZipStorage = new ArrayList<String>();
+//    public static ArrayList<String> tempZipStorage = new ArrayList<String>();
+    public static ArrayList<String> zipContent = new ArrayList<String>();
     public static ArrayList<String> folderZipStructure = new ArrayList<String>();
+//    public static Deque<String> zipContent = new ArrayDeque<String>();
+
+    private String getPathToFile(String path){
+        return path.replace(Paths.get(path).getFileName().toString(), "");
+    }
 
     public void unzip(String path) {
         Enumeration entries;
@@ -27,18 +32,22 @@ public class ZipHandler {
 
         try {
             zipFile = new ZipFile(path);
+
             entries = zipFile.entries();
 
             while (entries.hasMoreElements()) {
                 ZipEntry entry = (ZipEntry) entries.nextElement();
+                final String pathToFile = getPathToFile(path)+entry.getName();
 
                 if (entry.isDirectory()) {
-                    (new File(entry.getName())).mkdir();
+                    (new File(pathToFile)).mkdir();
+//                    (new File(path)).mkdir();
                     continue;
                 }
-
-                addZipPath(path,entry.getName());
-                String s = getFileExtension(entry.getName());
+                final String extension = getFileExtension(entry.getName());
+                if (extension.equals("application/x-zip-compressed") || extension.equals("application/x-zip-compressed")){
+                    addZipPath(path,entry.getName());
+                }
 //                if (s.equals("application/x-zip-compressed")) {
 //                    unzip("D:/projects/simpleSE/inputs/"+entry.getName());
 //
@@ -48,10 +57,25 @@ public class ZipHandler {
 //                }
 
                 copyInputStream(zipFile.getInputStream(entry),
-                        new BufferedOutputStream(new FileOutputStream(entry.getName())));
+                        new BufferedOutputStream(new FileOutputStream(pathToFile)));
+//                        new BufferedOutputStream(new FileOutputStream(path)));
             }
+//            String t = zipContent.pollFirst();
+
+
 
             zipFile.close();
+            if(!zipContent.isEmpty()){
+                for (Iterator<String> innerZipFilePathArray = zipContent.iterator(); innerZipFilePathArray.hasNext();){
+                    String innerPath = innerZipFilePathArray.next();
+                    unzip(innerPath);
+                    innerZipFilePathArray.remove();
+                }
+//                for (String innerZipFilePath : zipContent){
+//                    zipContent.removeLast();
+//                    unzip(innerZipFilePath);
+//                }
+            }
         } catch (IOException ioe) {
             System.err.println("Unhandled exception:");
             ioe.printStackTrace();
@@ -60,8 +84,10 @@ public class ZipHandler {
     }
 
     private void addZipPath (String zipPath, String innerZipPath ){
-        final String path = zipPath.substring(0,zipPath.indexOf(Paths.get(zipPath).getFileName().toString()));
-        String t = path+"%s".format(innerZipPath);
+        final String pathToMainZip = zipPath.substring(0,zipPath.indexOf(Paths.get(zipPath).getFileName().toString()));
+        String formatPath = pathToMainZip+innerZipPath;
+        zipContent.add(formatPath);
+//        zipContent.push(formatPath);
     }
 
     private String getFileExtension (String pathToFile) throws IOException {
