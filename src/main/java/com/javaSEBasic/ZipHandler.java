@@ -41,21 +41,12 @@ public class ZipHandler {
 
                 if (entry.isDirectory()) {
                     (new File(pathToFile)).mkdir();
-//                    (new File(path)).mkdir();
                     continue;
                 }
                 final String extension = getFileExtension(entry.getName());
                 if (extension.equals("application/x-zip-compressed") || extension.equals("application/x-zip-compressed")){
                     addZipPath(path,entry.getName());
                 }
-//                if (s.equals("application/x-zip-compressed")) {
-//                    unzip("D:/projects/simpleSE/inputs/"+entry.getName());
-//
-//                } else if (s.equals("application/x-gzip")) {
-//                    ungzip();
-//
-//                }
-
                 copyInputStream(zipFile.getInputStream(entry),
                         new BufferedOutputStream(new FileOutputStream(pathToFile)));
 //                        new BufferedOutputStream(new FileOutputStream(path)));
@@ -68,13 +59,9 @@ public class ZipHandler {
             if(!zipContent.isEmpty()){
                 for (Iterator<String> innerZipFilePathArray = zipContent.iterator(); innerZipFilePathArray.hasNext();){
                     String innerPath = innerZipFilePathArray.next();
-                    unzip(innerPath);
                     innerZipFilePathArray.remove();
+                    unzip(innerPath);
                 }
-//                for (String innerZipFilePath : zipContent){
-//                    zipContent.removeLast();
-//                    unzip(innerZipFilePath);
-//                }
             }
         } catch (IOException ioe) {
             System.err.println("Unhandled exception:");
@@ -87,7 +74,6 @@ public class ZipHandler {
         final String pathToMainZip = zipPath.substring(0,zipPath.indexOf(Paths.get(zipPath).getFileName().toString()));
         String formatPath = pathToMainZip+innerZipPath;
         zipContent.add(formatPath);
-//        zipContent.push(formatPath);
     }
 
     private String getFileExtension (String pathToFile) throws IOException {
