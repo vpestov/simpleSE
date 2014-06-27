@@ -61,7 +61,6 @@ public class ZipHandler {
                     String innerPath = innerZipFilePathArray.next();
                     innerZipFilePathArray.remove();
                     unzip(innerPath);
-
                 }
             }
         } catch (IOException ioe) {
@@ -75,7 +74,6 @@ public class ZipHandler {
         final String pathToMainZip = zipPath.substring(0,zipPath.indexOf(Paths.get(zipPath).getFileName().toString()));
         String formatPath = pathToMainZip+innerZipPath;
         zipContent.add(formatPath);
-//        zipContent.push(formatPath);
     }
 
     private String getFileExtension (String pathToFile) throws IOException {
