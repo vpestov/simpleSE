@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -23,7 +24,8 @@ public class ZipHandler {
 //    public static Deque<String> zipContent = new ArrayDeque<String>();
 
     private String getPathToFile(String path){
-        return path.replace(Paths.get(path).getFileName().toString(), "");
+//        return path.replace(Paths.get(path).getFileName().toString(), "");
+        return path.substring(0,path.lastIndexOf(Paths.get(path).getFileName().toString()));
     }
 
     public void unzip(String path) {
@@ -45,7 +47,7 @@ public class ZipHandler {
                     continue;
                 }
 
-                if (extension.equals("application/x-zip-compressed") || extension.equals("application/x-zip-compressed")){
+                if (extension.equals("application/x-zip-compressed") || extension.equals("application/x-gzip")){
                     (new File(pathToFile)).mkdir();
                     pathToFile = pathToFile + "/" + Paths.get(pathToFile).getFileName().toString();
                     zipContent.add(pathToFile);
@@ -54,13 +56,20 @@ public class ZipHandler {
                 copyInputStream(zipFile.getInputStream(entry),
                         new BufferedOutputStream(new FileOutputStream(pathToFile)));
             }
-
             zipFile.close();
+
+            deleteExtractedArchive(path);
+
             if(!zipContent.isEmpty()){
                 for (Iterator<String> innerZipFilePathArray = zipContent.iterator(); innerZipFilePathArray.hasNext();){
                     String innerPath = innerZipFilePathArray.next();
                     innerZipFilePathArray.remove();
-                    unzip(innerPath);
+                    if(("application/x-zip-compressed").equals(getFileExtension(innerPath))){
+                        unzip(innerPath);
+                    }else {
+                        unGzip(innerPath);
+                    }
+
                 }
             }
         } catch (IOException ioe) {
@@ -68,6 +77,27 @@ public class ZipHandler {
             ioe.printStackTrace();
             return;
         }
+    }
+
+    private void deleteExtractedArchive(String path){
+        final Path target = Paths.get(path);
+        try {
+            Files.delete(target);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void unGzip(String pathToGzip){
+        final String pathToFile = pathToGzip.substring(0,pathToGzip.length()-3);
+        try {
+            copyInputStream(new GZIPInputStream(new FileInputStream(pathToGzip)),
+                    new BufferedOutputStream(new FileOutputStream(pathToFile)));
+            deleteExtractedArchive(pathToGzip);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private void addZipPath (String zipPath, String innerZipPath ){
