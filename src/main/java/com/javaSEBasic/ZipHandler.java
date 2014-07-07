@@ -20,8 +20,9 @@ public class ZipHandler {
 
 //    public static ArrayList<String> tempZipStorage = new ArrayList<String>();
     public static ArrayList<String> zipContent = new ArrayList<String>();
-    public static ArrayList<String> folderZipStructure = new ArrayList<String>();
-//    public static Deque<String> zipContent = new ArrayDeque<String>();
+//    public static ArrayList<String> zipStructure = new ArrayList<String>();
+    public static Deque<String> zipStructure = new ArrayDeque<String>();
+    public static Map<String, ArrayList<String>> zipWithChildren = new HashMap<String, ArrayList<String>>();
 
     private String getPathToFile(String path){
 //        return path.replace(Paths.get(path).getFileName().toString(), "");
@@ -36,11 +37,14 @@ public class ZipHandler {
             zipFile = new ZipFile(path);
 
             entries = zipFile.entries();
+            zipStructure.addFirst(path);
+            ArrayList<String> innerZipContent = new ArrayList<String>();
 
             while (entries.hasMoreElements()) {
                 ZipEntry entry = (ZipEntry) entries.nextElement();
                 String pathToFile = getPathToFile(path)+entry.getName();
                 final String extension = getFileExtension(entry.getName());
+                innerZipContent.add(pathToFile);
 
                 if (entry.isDirectory()) {
                     (new File(pathToFile)).mkdir();
@@ -56,6 +60,7 @@ public class ZipHandler {
                 copyInputStream(zipFile.getInputStream(entry),
                         new BufferedOutputStream(new FileOutputStream(pathToFile)));
             }
+            zipWithChildren.put(path,innerZipContent);
             zipFile.close();
 
             deleteExtractedArchive(path);
