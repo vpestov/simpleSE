@@ -5,137 +5,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.zip.GZIPInputStream;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.Map;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 public class ZipHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZipHandler.class);
 
-//    public static ArrayList<String> tempZipStorage = new ArrayList<String>();
-    public static ArrayList<String> zipContent = new ArrayList<String>();
-//    public static ArrayList<String> zipStructure = new ArrayList<String>();
-    public static Deque<String> zipStructure = new ArrayDeque<String>();
-    public static Map<String, ArrayList<String>> zipWithChildren = new HashMap<String, ArrayList<String>>();
-
-    private String getPathToFile(String path){
-//        return path.replace(Paths.get(path).getFileName().toString(), "");
-        return path.substring(0,path.lastIndexOf(Paths.get(path).getFileName().toString()));
-    }
-
-    public void unzip(String path) {
-        Enumeration entries;
-        ZipFile zipFile;
-        try {
-            zipFile = new ZipFile(path);
-            entries = zipFile.entries();
-            zipStructure.addFirst(path);
-            ArrayList<String> innerZipContent = new ArrayList<String>();
-
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = (ZipEntry) entries.nextElement();
-                String pathToFile = getPathToFile(path)+entry.getName();
-                final String extension = getFileExtension(entry.getName());
-                innerZipContent.add(pathToFile);
-
-                if (entry.isDirectory()) {
-                    (new File(pathToFile)).mkdir();
-                    continue;
-                }
-
-                if (extension.equals("application/x-zip-compressed") || extension.equals("application/x-gzip")){
-                    (new File(pathToFile)).mkdir();
-                    pathToFile = pathToFile + "/" + Paths.get(pathToFile).getFileName().toString();
-                    zipContent.add(pathToFile);
-                }
-
-                copyInputStream(zipFile.getInputStream(entry),
-                        new BufferedOutputStream(new FileOutputStream(pathToFile)));
-            }
-            zipWithChildren.put(path,innerZipContent);
-            zipFile.close();
-
-            deleteExtractedArchive(path);
-
-            if(!zipContent.isEmpty()){
-                for (Iterator<String> innerZipFilePathArray = zipContent.iterator(); innerZipFilePathArray.hasNext();){
-                    String innerPath = innerZipFilePathArray.next();
-                    innerZipFilePathArray.remove();
-                    if(("application/x-zip-compressed").equals(getFileExtension(innerPath))){
-                        unzip(innerPath);
-                    }else {
-                        unGzip(innerPath);
-                    }
-
-                }
-            }
-        } catch (IOException ioe) {
-            System.err.println("Unhandled exception:");
-            ioe.printStackTrace();
-            return;
-        }
-    }
-
-    private void deleteExtractedArchive(String path){
-        final Path target = Paths.get(path);
-        try {
-            Files.delete(target);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void unGzip(String pathToGzip){
-        final String pathToFile = pathToGzip.substring(0,pathToGzip.length()-3);
-        try {
-            copyInputStream(new GZIPInputStream(new FileInputStream(pathToGzip)),
-                    new BufferedOutputStream(new FileOutputStream(pathToFile)));
-            deleteExtractedArchive(pathToGzip);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    private void addZipPath (String zipPath, String innerZipPath ){
-        final String pathToMainZip = zipPath.substring(0,zipPath.indexOf(Paths.get(zipPath).getFileName().toString()));
-        String formatPath = pathToMainZip+innerZipPath;
-        zipContent.add(formatPath);
-    }
-
-    private String getFileExtension (String pathToFile) throws IOException {
-        final Path path = Paths.get(pathToFile);
-        return Files.probeContentType(path);
-    }
-
-//    public void zipDirectory(String zipFileName, String dir){
-//        final File file = new File(dir);
-//        FileOutputStream outputStream = null;
-//        ZipOutputStream zos = null;
-//        try {
-//            outputStream = new FileOutputStream(zipFileName);
-//            zos = new ZipOutputStream(outputStream);
-//            LOGGER.info("creating : {}", zipFileName);
-//            addDirectory(file, zos);
-//        } catch (FileNotFoundException e) {
-//            LOGGER.error("Can't file file : {}", zipFileName);
-//        } finally {
-//            try {
-//                zos.close();
-//            } catch (IOException e) {
-//                LOGGER.error("Can't close OutputStream");
-//            }
-//        }
-//    }
-
-
-    public void createZipArchive (final String zipName,final ArrayList<String> inner){
+    public void createZipArchive (final String zipName,final ArrayList<String> inner, String path){
         FileOutputStream outputStream = null;
         ZipOutputStream zos = null;
         try {
@@ -144,9 +24,9 @@ public class ZipHandler {
             for (String innerPath: inner){
                 final File innerFile = new File(innerPath);
                 if(innerFile.isDirectory()){
-                    zipDir(innerFile,zos);
+                    zipDir(innerFile,zos, path);
                 }else {
-                    zipFile(innerFile,zos);
+                    zipFile(innerFile,zos,path);
                 }
             }
         } catch (FileNotFoundException e) {
@@ -169,14 +49,105 @@ public class ZipHandler {
             }
         }
     }
+
+    public void createZipArchive(Deque<String> archivesStructure, Map<String, ArrayList<String>> zipWithChildren, String pathToCut) {
+        for (String currentArchive : archivesStructure) {
+            final String archiveName = currentArchive.substring(currentArchive.lastIndexOf("/") + 1);
+            FileOutputStream outputStream = null;
+            ZipOutputStream zos = null;
+            try {
+                outputStream = new FileOutputStream(archiveName);
+                zos = new ZipOutputStream(outputStream);
+                for (String archiveContent : addInnerZipContent(zipWithChildren.get(currentArchive))) {
+                    final File innerFile = new File(archiveContent);
+                    if (innerFile.isDirectory()) {
+                        zipDir(innerFile, zos, pathToCut);
+                    } else {
+                        zipFile(innerFile, zos, pathToCut);
+                    }
+                }
+            } catch (FileNotFoundException e) {
+                LOGGER.error("Error creating outputStream. File: {} was not found", archiveName);
+            } finally {
+                if (zos != null) {
+                    try {
+                        zos.close();
+                    } catch (IOException e) {
+                        LOGGER.error("Can't close zipOutputStream: {}", zos);
+                    }
+                }
+                if (outputStream != null) {
+                    try {
+                        outputStream.close();
+                    } catch (IOException e) {
+                        LOGGER.error("Can't close FileOutputStream: {}", outputStream);
+                    }
+
+                }
+            }
+        }
+    }
+
     public void testMethodToCallZip(){
         final String path = "D:/testData/testToZip/firstZip.zip";
         final ArrayList<String> testData = new ArrayList<String>(10);
         testData.add("D:/testData/testToZip/data2");
+        testData.add("D:/testData/testToZip/data2/data");
+        testData.add("D:/testData/testToZip/data2/data/town4.txt");
+        testData.add("D:/testData/testToZip/data2/data/town6.txt");
+        testData.add("D:/testData/testToZip/data2/data/town6(2).txt");
         testData.add("D:/testData/testToZip/data1.txt");
-        createZipArchive(path, testData);
+        final ArrayList<String> filesToZip = addInnerZipContent(testData);
+        createZipArchive(path, testData, path);
     }
+//    public static ArrayList<String> tempZipStorage = new ArrayList<String>();
 
+//    private void addZipPath (String zipPath, String innerZipPath ){
+//        final String pathToMainZip = zipPath.substring(0,zipPath.indexOf(Paths.get(zipPath).getFileName().toString()));
+//        String formatPath = pathToMainZip+innerZipPath;
+//        tempZipContent.add(formatPath);
+//    }
+
+//    public void zipDirectory(String zipFileName, String dir){
+//        final File file = new File(dir);
+//        FileOutputStream outputStream = null;
+//        ZipOutputStream zos = null;
+//        try {
+//            outputStream = new FileOutputStream(zipFileName);
+//            zos = new ZipOutputStream(outputStream);
+//            LOGGER.info("creating : {}", zipFileName);
+//            addDirectory(file, zos);
+//        } catch (FileNotFoundException e) {
+//            LOGGER.error("Can't file file : {}", zipFileName);
+//        } finally {
+//            try {
+//                zos.close();
+//            } catch (IOException e) {
+//                LOGGER.error("Can't close OutputStream");
+//            }
+//        }
+//    }
+
+
+
+    private ArrayList<String> addInnerZipContent(final ArrayList<String> innerContent){
+//        final File currentFile = new File(pathToFile);
+        String tempPath="";
+        ArrayList<String> filesToZip = new ArrayList<String>();
+        for(String currentPath: innerContent){
+            if("".equals(tempPath) || !tempPath.equals(currentPath.substring(0,tempPath.length()))){
+                filesToZip.add(currentPath);
+                tempPath = currentPath;
+            }
+        }
+//        if(currentFile.isDirectory()){
+
+        return filesToZip;
+//        }else {
+//            innerContent.add(pathToFile);
+//        }
+
+    }
 //    public void zipFiles(final String zipName, final ArrayList<String> inner){
 //
 //        try {
@@ -216,26 +187,27 @@ public class ZipHandler {
 //        }
 //    }
 
-    private void zipDir(File dir, ZipOutputStream zos){
+    private void zipDir(File dir, ZipOutputStream zos, String pathToCut){
         File[] files = dir.listFiles();
         byte[] tmpBuf = new byte[1024];
         for (File currentFile: files) {
             if (currentFile.isDirectory()) {
-                zipDir(currentFile, zos);
+                zipDir(currentFile, zos, pathToCut);
                 continue;
             }
-                zipFile(currentFile,zos);
+                zipFile(currentFile,zos, pathToCut);
 
 
         }
     }
 
-    private void zipFile(File file, ZipOutputStream zos) {
+    private void zipFile(File file, ZipOutputStream zos, String pathToCut) {
         FileInputStream fileInputStream = null;
         final byte[] buffer = new byte[1024];
         try {
             fileInputStream = new FileInputStream(file);
             zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace("D:\\testData\\testToZip\\","")));
+//            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace(pathToCut.replace("/","\\"),"")));
             int length;
             while ((length = fileInputStream.read(buffer)) > 0) {
                 zos.write(buffer, 0, length);
@@ -292,14 +264,4 @@ public class ZipHandler {
 //        }
 //    }
 
-    private void copyInputStream(InputStream in, OutputStream out) throws IOException {
-        byte[] buffer = new byte[1024];
-        int len;
-
-        while ((len = in.read(buffer)) >= 0)
-            out.write(buffer, 0, len);
-
-        in.close();
-        out.close();
-    }
 }
