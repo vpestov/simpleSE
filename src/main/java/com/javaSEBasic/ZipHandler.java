@@ -52,22 +52,25 @@ public class ZipHandler {
 
     public void createZipArchive(Deque<String> archivesStructure, Map<String, ArrayList<String>> zipWithChildren, String pathToCut) {
         for (String currentArchive : archivesStructure) {
-            final String archiveName = currentArchive.substring(currentArchive.lastIndexOf("/") + 1);
+//            final String archiveName = currentArchive.substring(currentArchive.lastIndexOf("/") + 1);
+//            final String archiveName = currentArchive.substring(0,currentArchive.lastIndexOf("/"));
             FileOutputStream outputStream = null;
             ZipOutputStream zos = null;
             try {
-                outputStream = new FileOutputStream(archiveName);
+                outputStream = new FileOutputStream(currentArchive);
                 zos = new ZipOutputStream(outputStream);
                 for (String archiveContent : addInnerZipContent(zipWithChildren.get(currentArchive))) {
                     final File innerFile = new File(archiveContent);
                     if (innerFile.isDirectory()) {
-                        zipDir(innerFile, zos, pathToCut);
+//                        zipDir(innerFile, zos, pathToCut);
+                        zipDir(innerFile, zos, archiveContent);
                     } else {
-                        zipFile(innerFile, zos, pathToCut);
+//                        zipFile(innerFile, zos, pathToCut);
+                        zipFile(innerFile, zos, archiveContent.substring(0,archiveContent.lastIndexOf("/")));
                     }
                 }
             } catch (FileNotFoundException e) {
-                LOGGER.error("Error creating outputStream. File: {} was not found", archiveName);
+                LOGGER.error("Error creating outputStream. File: {} was not found", currentArchive);
             } finally {
                 if (zos != null) {
                     try {
@@ -98,7 +101,7 @@ public class ZipHandler {
         testData.add("D:/testData/testToZip/data2/data/town6(2).txt");
         testData.add("D:/testData/testToZip/data1.txt");
         final ArrayList<String> filesToZip = addInnerZipContent(testData);
-        createZipArchive(path, testData, path);
+        createZipArchive(path, filesToZip, path);
     }
 //    public static ArrayList<String> tempZipStorage = new ArrayList<String>();
 
@@ -135,10 +138,25 @@ public class ZipHandler {
         String tempPath="";
         ArrayList<String> filesToZip = new ArrayList<String>();
         for(String currentPath: innerContent){
-            if("".equals(tempPath) || !tempPath.equals(currentPath.substring(0,tempPath.length()))){
+            boolean isSameDirectory = !"".equals(tempPath);
+//            if(currentPath.length() >= tempPath.length()
+//                    && !tempPath.equals(currentPath.substring(0,tempPath.length()))){
+//                isSameDirectory = false;
+//            }
+            if(currentPath.length() <= tempPath.length()){
+                isSameDirectory = false;
+            }else if (!tempPath.equals(currentPath.substring(0,tempPath.length()))){
+                isSameDirectory = false;
+            }
+            if(!isSameDirectory){
                 filesToZip.add(currentPath);
                 tempPath = currentPath;
             }
+
+//            if("".equals(tempPath) || !tempPath.equals(currentPath.substring(0,tempPath.length()))){
+//                filesToZip.add(currentPath);
+//                tempPath = currentPath;
+//            }
         }
 //        if(currentFile.isDirectory()){
 
@@ -206,8 +224,8 @@ public class ZipHandler {
         final byte[] buffer = new byte[1024];
         try {
             fileInputStream = new FileInputStream(file);
-            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace("D:\\testData\\testToZip\\","")));
-//            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace(pathToCut.replace("/","\\"),"")));
+//            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace("D:\\testData\\testToZip\\","")));
+            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace(pathToCut.replace("/","\\"),"")));
             int length;
             while ((length = fileInputStream.read(buffer)) > 0) {
                 zos.write(buffer, 0, length);
