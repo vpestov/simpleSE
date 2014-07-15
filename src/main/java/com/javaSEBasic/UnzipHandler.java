@@ -75,7 +75,6 @@ public class UnzipHandler{
     }
 
     private void unGzip(String pathToGzip){
-//        archivesStructure.addFirst(pathToGzip);
         final String pathToFile = pathToGzip.substring(0,pathToGzip.length()-3);
         try {
             copyInputStream(new GZIPInputStream(new FileInputStream(pathToGzip)),

@@ -5,6 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Map;
@@ -63,7 +66,7 @@ public class ZipHandler {
                     final File innerFile = new File(archiveContent);
                     if (innerFile.isDirectory()) {
 //                        zipDir(innerFile, zos, pathToCut);
-                        zipDir(innerFile, zos, archiveContent);
+                        zipDir(innerFile, zos, currentArchive.substring(0,currentArchive.lastIndexOf("/")+1));
                     } else {
 //                        zipFile(innerFile, zos, pathToCut);
                         zipFile(innerFile, zos, archiveContent.substring(0,archiveContent.lastIndexOf("/")));
@@ -243,6 +246,16 @@ public class ZipHandler {
             } catch (IOException e) {
                 LOGGER.error("Can't close ZipOutputStream");
             }
+        }
+    }
+
+    private void moveFile(){
+        final Path source = Paths.get("D:/testData/temp/dataTest/123.gz");
+        final Path target = Paths.get("D:/testData/temp/123.gz");
+        try {
+            Files.move(target, source);
+        } catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
     }
 
