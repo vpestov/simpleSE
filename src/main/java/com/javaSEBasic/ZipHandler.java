@@ -249,13 +249,13 @@ public class ZipHandler {
         }
     }
 
-    private void moveFile(){
+    private void moveFile(final String fromPath, final String toPath){
         final Path source = Paths.get("D:/testData/temp/dataTest/123.gz");
         final Path target = Paths.get("D:/testData/temp/123.gz");
         try {
             Files.move(target, source);
         } catch (IOException e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            LOGGER.error("Could not move file : {}",fromPath);
         }
     }
 
