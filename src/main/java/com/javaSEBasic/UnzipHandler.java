@@ -42,8 +42,8 @@ public class UnzipHandler{
                 }
 
                 if (extension.equals("application/x-zip-compressed") || extension.equals("application/x-gzip")){
-                    (new File(pathToFile)).mkdir();
-                    pathToFile = pathToFile + "/" + Paths.get(pathToFile).getFileName().toString();
+                    (new File(pathToFile + ".temp")).mkdir();
+                    pathToFile = pathToFile + ".temp" + "/" + Paths.get(pathToFile).getFileName().toString();
                     tempZipContent.add(pathToFile);
                 }
 

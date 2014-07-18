@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,40 +19,42 @@ public class ZipHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZipHandler.class);
 
-    public void createZipArchive (final String zipName,final ArrayList<String> inner, String path){
-        FileOutputStream outputStream = null;
-        ZipOutputStream zos = null;
-        try {
-            outputStream = new FileOutputStream(zipName);
-            zos = new ZipOutputStream(outputStream);
-            for (String innerPath: inner){
-                final File innerFile = new File(innerPath);
-                if(innerFile.isDirectory()){
-                    zipDir(innerFile,zos, path);
-                }else {
-                    zipFile(innerFile,zos,path);
-                }
-            }
-        } catch (FileNotFoundException e) {
-            LOGGER.error("Error creating outputStream. File: {} was not found",zipName);
-        } finally {
-            if (zos != null){
-                try {
-                    zos.close();
-                } catch (IOException e) {
-                    LOGGER.error("Can't close zipOutputStream: {}",zos);
-                }
-            }
-            if (outputStream != null){
-                try {
-                    outputStream.close();
-                } catch (IOException e) {
-                    LOGGER.error("Can't close FileOutputStream: {}",outputStream);
-                }
+    final DeletingFileVisitor delFileVisitor = new DeletingFileVisitor();
 
-            }
-        }
-    }
+//    public void createZipArchive (final String zipName,final ArrayList<String> inner, String path){
+//        FileOutputStream outputStream = null;
+//        ZipOutputStream zos = null;
+//        try {
+//            outputStream = new FileOutputStream(zipName);
+//            zos = new ZipOutputStream(outputStream);
+//            for (String innerPath: inner){
+//                final File innerFile = new File(innerPath);
+//                if(innerFile.isDirectory()){
+//                    zipDir(innerFile,zos, path);
+//                }else {
+//                    zipFile(innerFile,zos,path);
+//                }
+//            }
+//        } catch (FileNotFoundException e) {
+//            LOGGER.error("Error creating outputStream. File: {} was not found",zipName);
+//        } finally {
+//            if (zos != null){
+//                try {
+//                    zos.close();
+//                } catch (IOException e) {
+//                    LOGGER.error("Can't close zipOutputStream: {}",zos);
+//                }
+//            }
+//            if (outputStream != null){
+//                try {
+//                    outputStream.close();
+//                } catch (IOException e) {
+//                    LOGGER.error("Can't close FileOutputStream: {}",outputStream);
+//                }
+//
+//            }
+//        }
+//    }
 
     public void createZipArchive(Deque<String> archivesStructure, Map<String, ArrayList<String>> zipWithChildren, String pathToCut) {
         for (String currentArchive : archivesStructure) {
@@ -91,21 +94,23 @@ public class ZipHandler {
 
                 }
             }
+
+            moveFileToRealPath(currentArchive);
         }
     }
 
-    public void testMethodToCallZip(){
-        final String path = "D:/testData/testToZip/firstZip.zip";
-        final ArrayList<String> testData = new ArrayList<String>(10);
-        testData.add("D:/testData/testToZip/data2");
-        testData.add("D:/testData/testToZip/data2/data");
-        testData.add("D:/testData/testToZip/data2/data/town4.txt");
-        testData.add("D:/testData/testToZip/data2/data/town6.txt");
-        testData.add("D:/testData/testToZip/data2/data/town6(2).txt");
-        testData.add("D:/testData/testToZip/data1.txt");
-        final ArrayList<String> filesToZip = addInnerZipContent(testData);
-        createZipArchive(path, filesToZip, path);
-    }
+//    public void testMethodToCallZip(){
+//        final String path = "D:/testData/testToZip/firstZip.zip";
+//        final ArrayList<String> testData = new ArrayList<String>(10);
+//        testData.add("D:/testData/testToZip/data2");
+//        testData.add("D:/testData/testToZip/data2/data");
+//        testData.add("D:/testData/testToZip/data2/data/town4.txt");
+//        testData.add("D:/testData/testToZip/data2/data/town6.txt");
+//        testData.add("D:/testData/testToZip/data2/data/town6(2).txt");
+//        testData.add("D:/testData/testToZip/data1.txt");
+//        final ArrayList<String> filesToZip = addInnerZipContent(testData);
+//        createZipArchive(path, filesToZip, path);
+//    }
 //    public static ArrayList<String> tempZipStorage = new ArrayList<String>();
 
 //    private void addZipPath (String zipPath, String innerZipPath ){
@@ -249,15 +254,46 @@ public class ZipHandler {
         }
     }
 
-    private void moveFile(final String fromPath, final String toPath){
-        final Path source = Paths.get("D:/testData/temp/dataTest/123.gz");
-        final Path target = Paths.get("D:/testData/temp/123.gz");
+    private void moveFileToRealPath(final String fromPath){
+
+        final Path source = Paths.get(fromPath);
+        final Path fileToDelete = source.getParent();
+        final Path target = Paths.get(fileToDelete.getParent().toString() + "\\" + source.getFileName().toString());//Paths.get(toPath);
+//        final String toPath = fromPath.replace(currentArchive.substring(currentArchive.lastIndexOf("/"))+".temp","");
+
         try {
-            Files.move(target, source);
+            Files.move(source, target);
+            Files.walkFileTree(fileToDelete,delFileVisitor);
         } catch (IOException e) {
             LOGGER.error("Could not move file : {}",fromPath);
         }
     }
+
+    public static void copyFile(File sourceFile, File destFile) throws IOException {
+        if(!destFile.exists()) {
+            destFile.createNewFile();
+        }
+
+        FileChannel source = null;
+        FileChannel destination = null;
+        try {
+            source = new FileInputStream(sourceFile).getChannel();
+            destination = new FileOutputStream(destFile).getChannel();
+
+            long count = 0;
+            long size = source.size();
+            while((count += destination.transferFrom(source, count, size-count))<size);
+        }
+        finally {
+            if(source != null) {
+                source.close();
+            }
+            if(destination != null) {
+                destination.close();
+            }
+        }
+    }
+
 
 //    private void addDirectory(File dir, ZipOutputStream zos){
 //        File[] files = dir.listFiles();
