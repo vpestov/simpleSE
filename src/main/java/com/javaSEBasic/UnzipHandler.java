@@ -75,6 +75,7 @@ public class UnzipHandler{
     }
 
     private void unGzip(String pathToGzip){
+        archivesStructure.addFirst(pathToGzip);
         final String pathToFile = pathToGzip.substring(0,pathToGzip.length()-3);
         try {
             copyInputStream(new GZIPInputStream(new FileInputStream(pathToGzip)),
@@ -91,7 +92,7 @@ public class UnzipHandler{
         return path.substring(0,path.lastIndexOf(Paths.get(path).getFileName().toString()));
     }
 
-    private String getFileExtension (String pathToFile) throws IOException {
+    public String getFileExtension (String pathToFile) throws IOException {
         final Path path = Paths.get(pathToFile);
         return Files.probeContentType(path);
     }

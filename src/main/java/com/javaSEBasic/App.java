@@ -2,10 +2,12 @@ package com.javaSEBasic;
 
 import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 public class App 
 {
@@ -23,8 +25,17 @@ public class App
         final ZipHandler zipHandler = new ZipHandler();
         final UnzipHandler unzipHandler = new UnzipHandler();
         final String pathToCut = path.substring(0,path.lastIndexOf("/")+1);
+
+
+//        zipHandler.gzipFile("D:/testData/temp/ann@domain.org","D:/testData/temp/ann@domain.org.gz");
         unzipHandler.unzip(path);
         zipHandler.createZipArchive(UnzipHandler.archivesStructure,UnzipHandler.zipWithChildren,pathToCut);
+
+
+
+
+
+
 //        zipHandler.testMethodToCallZip();
 //        zipHandler.zipDirectory("testDirectory.zip",directory);
 //        final File myDir = new File(directory);
