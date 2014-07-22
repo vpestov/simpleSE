@@ -227,6 +227,7 @@ public class ZipHandler {
     private void zipDir(File dir, ZipOutputStream zos, String pathToCut){
         File[] files = dir.listFiles();
         byte[] tmpBuf = new byte[1024];
+        zipEmptyDir(dir,zos,pathToCut);
         for (File currentFile: files) {
             if (currentFile.isDirectory()) {
                 zipDir(currentFile, zos, pathToCut);
@@ -245,7 +246,9 @@ public class ZipHandler {
         try {
             fileInputStream = new FileInputStream(file);
 //            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace("D:\\testData\\testToZip\\","")));
-            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace(pathToCut.replace("/","\\"),"")));
+//            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace(pathToCut.replace("/","\\"),"")));
+            zos.putNextEntry(new ZipEntry((file.getAbsolutePath().replace("\\","/")).replace(pathToCut,"")));
+
             int length;
             while ((length = fileInputStream.read(buffer)) > 0) {
                 zos.write(buffer, 0, length);
@@ -268,7 +271,8 @@ public class ZipHandler {
 
     private void zipEmptyDir(File file, ZipOutputStream zos, String pathToCut){
         try {
-            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace(pathToCut.replace("/","\\"),"") + "/"));
+//            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace(pathToCut.replace("/","\\"),"") + "/"));
+            zos.putNextEntry(new ZipEntry((file.getAbsolutePath().replace("\\","/")).replace(pathToCut,"")+"/"));
             zos.closeEntry();
         } catch (IOException e) {
             LOGGER.error("Error Adding file : {} to ZipEntry", file.getAbsolutePath());

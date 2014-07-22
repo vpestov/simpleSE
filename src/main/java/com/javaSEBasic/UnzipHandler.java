@@ -19,6 +19,8 @@ public class UnzipHandler{
     public static Deque<String> archivesStructure = new ArrayDeque<String>();
     public static Map<String, ArrayList<String>> zipWithChildren = new HashMap<String, ArrayList<String>>();
 
+    public static Deque<ZipEntry> test = new ArrayDeque<ZipEntry>();
+
 
     public void unzip(String path) {
         Enumeration entries;
@@ -29,8 +31,15 @@ public class UnzipHandler{
             archivesStructure.addFirst(path);
             ArrayList<String> innerZipContent = new ArrayList<String>();
 
+
+//            while (entries.hasMoreElements()){
+//                ZipEntry w = (ZipEntry) entries.nextElement();
+//                e.addFirst(w);
+//            }
+
             while (entries.hasMoreElements()) {
                 ZipEntry entry = (ZipEntry) entries.nextElement();
+                test.addFirst(entry);
                 String pathToFile = getPathToFile(path)+entry.getName();
                 final String extension = getFileExtension(entry.getName());
 //                addInnerZipContent(innerZipContent,pathToFile);
