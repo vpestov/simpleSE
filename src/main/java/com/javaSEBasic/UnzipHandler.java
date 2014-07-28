@@ -86,7 +86,7 @@ public class UnzipHandler{
         final String pathToFile = pathToGzip.substring(0,pathToGzip.length()-3);
         try {
 //            final InputStream fileToWrite = fileHandler.readFile(new GZIPInputStream(new FileInputStream(pathToGzip)));
-            final InputStream fileToWrite = fileHandler.readFile(new GZIPInputStream(new FileInputStream(pathToGzip)),"asdasdasd");
+            final InputStream fileToWrite = fileHandler.readFile(new GZIPInputStream(new FileInputStream(pathToGzip)));
             copyInputStream(fileHandler.readFile(new GZIPInputStream(new FileInputStream(pathToGzip))),
                     new BufferedOutputStream(new FileOutputStream(pathToFile)));
             deleteExtractedArchive(pathToGzip);
