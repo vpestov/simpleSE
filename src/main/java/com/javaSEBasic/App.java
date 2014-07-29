@@ -1,39 +1,42 @@
 package com.javaSEBasic;
 
-import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J;
+//import uk.org.lidalia.sysoutslf4j.context.SysOutOverSLF4J;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-
-public class App 
+public class App
 {
     private static final String path = "D:/testData/inputs.zip";
-//    private static final String path = "D:/testData/myTestDir.zip";
-
-    private static final String directory = "D:/projects/simpleSE/inputs2";
-    private static final String file = "D:/projects/simpleSE/logstest.zip";
+//    private static final String directory = "D:/projects/simpleSE/inputs2";
+//    private static final String file = "D:/projects/simpleSE/logstest.zip";
 
 
     public static void main( String[] args )
     {
-        SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
-        final ArchiveHandler archiveHandler = new ArchiveHandler();
+//        SysOutOverSLF4J.sendSystemOutAndErrToSLF4J();
         final ZipHandler zipHandler = new ZipHandler();
         final UnzipHandler unzipHandler = new UnzipHandler();
+        final FileHandler fileHandler = new FileHandler();
         final String pathToCut = path.substring(0,path.lastIndexOf("/")+1);
 
 
-//        zipHandler.gzipFile("D:/testData/temp/ann@domain.org","D:/testData/temp/ann@domain.org.gz");
+//        try {
+//            fileHandler.copyFile();
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+
+//        try {
+//            fileHandler.readFile1111();
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        } catch (IOException e) {
+//            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+//        }
+
+
         unzipHandler.unzip(path);
+        fileHandler.addFileToArchive(path,FileHandler.uniquePhones,"phones.txt");
+        fileHandler.addFileToArchive(path,FileHandler.uniqueEmails,"emails.txt");
         zipHandler.createZipArchive(UnzipHandler.archivesStructure,UnzipHandler.zipWithChildren,pathToCut);
-
-
-
-
 
 
 //        zipHandler.testMethodToCallZip();

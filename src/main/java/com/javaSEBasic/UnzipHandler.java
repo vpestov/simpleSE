@@ -48,14 +48,17 @@ public class UnzipHandler{
                     (new File(pathToFile + ".temp")).mkdir();
                     pathToFile = pathToFile + ".temp" + "/" + Paths.get(pathToFile).getFileName().toString();
                     tempZipContent.add(pathToFile);
-                    fileToWrite = zipFile.getInputStream(entry);
+//                    fileToWrite = zipFile.getInputStream(entry);
+                    copyInputStream(zipFile.getInputStream(entry),
+                            new BufferedOutputStream(new FileOutputStream(pathToFile)));
                 }
                 else {
-                    fileToWrite = fileHandler.readFile(zipFile.getInputStream(entry));
+//                    fileToWrite = fileHandler.readFile(zipFile.getInputStream(entry));
+                    fileHandler.copyFile(zipFile.getInputStream(entry),pathToFile);
                 }
 
-                copyInputStream(fileToWrite,
-                        new BufferedOutputStream(new FileOutputStream(pathToFile)));
+//                copyInputStream(fileToWrite,
+//                        new BufferedOutputStream(new FileOutputStream(pathToFile)));
             }
             zipWithChildren.put(path, innerZipContent);
             zipFile.close();
@@ -86,9 +89,10 @@ public class UnzipHandler{
         final String pathToFile = pathToGzip.substring(0,pathToGzip.length()-3);
         try {
 //            final InputStream fileToWrite = fileHandler.readFile(new GZIPInputStream(new FileInputStream(pathToGzip)));
-            final InputStream fileToWrite = fileHandler.readFile(new GZIPInputStream(new FileInputStream(pathToGzip)));
-            copyInputStream(fileHandler.readFile(new GZIPInputStream(new FileInputStream(pathToGzip))),
-                    new BufferedOutputStream(new FileOutputStream(pathToFile)));
+//            final InputStream fileToWrite = fileHandler.readFile(new GZIPInputStream(new FileInputStream(pathToGzip)));
+//            copyInputStream(fileHandler.readFile(new GZIPInputStream(new FileInputStream(pathToGzip))),
+//                    new BufferedOutputStream(new FileOutputStream(pathToFile)));
+            fileHandler.copyFile(new GZIPInputStream(new FileInputStream(pathToGzip)),pathToFile);
             deleteExtractedArchive(pathToGzip);
         } catch (IOException e) {
             e.printStackTrace();

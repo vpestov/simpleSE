@@ -5,12 +5,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -20,7 +22,7 @@ public class FileHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileHandler.class);
     public static Set uniqueEmails = new TreeSet();
-    public static Set uniqueTelephones = new TreeSet();
+    public static Set uniquePhones = new TreeSet();
 
     public InputStream readFile(InputStream in){
 
@@ -188,17 +190,21 @@ public class FileHandler {
     }
 
 
-    public void copyFile (){
-        FileChannel source = null;
+    public void copyFile () throws FileNotFoundException {
+//        FileChannel source = null;
+        ReadableByteChannel source = null;
         FileChannel destination = null;
         String fromPath = "D:/testData/new data from ISP provide 2012.05.11 CODE 2342423535345 Ext. +G245 -N2435 ++d7867";
 //        String fromPath = "D:/testData/data1.txt";
         String toPath = "D:/testData/testTest.txt";
         int DEFAULT_BUFFER_SIZE = 1024 * 8;
         StringBuilder builder = new StringBuilder();
+        File file = new File(fromPath);
+        InputStream in = new FileInputStream(file);
 
         try {
-            source = new FileInputStream(new File(fromPath)).getChannel();
+//            source = new FileInputStream(new File(fromPath)).getChannel();
+            source = Channels.newChannel(in);
             destination = new FileOutputStream(new File(toPath)).getChannel();
 
 
@@ -208,6 +214,7 @@ public class FileHandler {
 //                String dd = String.valueOf(Charset.defaultCharset().decode(buf));
                 String dd = replaceCodes(String.valueOf(Charset.defaultCharset().decode(buf)));
                 findEmails(dd);
+                findPhones(dd);
 //                builder.append(dd);
                 destination.write(ByteBuffer.wrap(dd.getBytes()));
 //                System.out.println(Charset.defaultCharset().decode(buf));
@@ -239,24 +246,103 @@ public class FileHandler {
 
     }
 
-    private String replaceCodes (String line){
-        line = line.replace("(101)","(201)");
-        line = line.replace("(202)","(802)");
-        line = line.replace("(301)","(321)");
-        return line;
+    public void copyFile(InputStream in, String toPath) throws IOException {
+        ReadableByteChannel source = null;
+        FileChannel destination = null;
+        final int DEFAULT_BUFFER_SIZE = 1024 * 8;
+        try {
+            source = Channels.newChannel(in);
+            destination = new FileOutputStream(new File(toPath)).getChannel();
+
+            ByteBuffer buf = ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE);
+            while ((source.read(buf))!= -1){
+                buf.flip();
+                    final String filePart = replaceCodes(String.valueOf(Charset.defaultCharset().decode(buf)));
+                    findEmails(filePart);
+                    findPhones(filePart);
+                destination.write(ByteBuffer.wrap(filePart.getBytes()));
+                buf.clear();
+            }
+        } catch (FileNotFoundException e) {
+            LOGGER.error("Could not find file : {}",toPath);
+        } catch (IOException e) {
+            LOGGER.error("Could not read content to ByteBuffer");
+        }finally {
+            in.close();
+            if(source != null){
+                try {
+                    source.close();
+                } catch (IOException e) {
+                    LOGGER.error("Could not close ReadableByteChannel : {}", source);
+                }
+            }
+            if (destination!=null){
+                try {
+                    destination.close();
+                } catch (IOException e) {
+                    LOGGER.error("Could not close FileChannel : {}", destination);
+                }
+            }
+        }
+    }
+
+    private String replaceCodes (String filePart){
+        filePart = filePart.replace("(101)","(201)");
+        filePart = filePart.replace("(202)","(802)");
+        filePart = filePart.replace("(301)","(321)");
+        return filePart;
     }
 
     private void findEmails(String line){
-        final String RE_MAIL = "([\\w\\-]([\\.\\w])+[\\w]+@([\\w\\-]+\\.)+org)";
-        Pattern p = Pattern.compile(RE_MAIL);
-        Matcher m = p.matcher(line);
+        final String regex = "([\\w\\-]([\\.\\w])+[\\w]+@([\\w\\-]+\\.)+org)";
+        final Pattern p = Pattern.compile(regex);
+        final Matcher m = p.matcher(line);
         while(m.find()) {
             uniqueEmails.add(m.group(1));
         }
     }
 
-    private void findTelephones(){
+    private void findPhones(String line){
+        final String regex = "(\\+\\d*)(\\s*\\(\\d*\\))(\\s?-?\\d*\\s?-?\\d*\\s?-?\\d*)";
+        final Pattern pattern = Pattern.compile(regex);
+        final Matcher matcher = pattern.matcher(line);
+        while (matcher.find()){
+            uniquePhones.add(matcher.group(1).replace(" ","") + " " + matcher.group(2).replace(" ","") + " " + matcher.group(3).replaceAll("[^\\d]", ""));
+        }
+    }
 
+    public void createFile(final String path, final Set<String> fileContent){
+        final Path pathToFile = Paths.get(path);
+        try {
+            Files.write(pathToFile,fileContent, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
+//        FileChannel destination = null;
+//        try {
+//             new FileOutputStream(new File(path)).getChannel();
+//            for (String content: fileContent){
+//                destination.write(ByteBuffer.wrap(content.getBytes()));
+//            }
+//        } catch (FileNotFoundException e) {
+//            LOGGER.error("Could not create file : {}",path);
+//        } catch (IOException e) {
+//            LOGGER.error("Could not write content to file : {}",path);
+//        }finally {
+//            if (destination!=null){
+//                try {
+//                    destination.close();
+//                } catch (IOException e) {
+//                    LOGGER.error("Could not close FileChannel : {}", destination);
+//                }
+//            }
+//        }
+    }
+
+    public void addFileToArchive(final String rootPath, final Set<String> fileContent, final String fileName){
+        final StringBuilder path = new StringBuilder().append(rootPath.substring(0,rootPath.length()-4)).append("/").append(fileName);
+        createFile(path.toString(),fileContent);
+        UnzipHandler.zipWithChildren.get(rootPath).add(path.toString());
     }
 
 }
