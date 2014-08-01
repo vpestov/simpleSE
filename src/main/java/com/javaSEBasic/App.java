@@ -4,7 +4,7 @@ package com.javaSEBasic;
 
 public class App
 {
-    private static final String path = "D:/testData/inputs.zip";
+    private static final String rootPath = "D:/testData/inputs.zip";
 //    private static final String directory = "D:/projects/simpleSE/inputs2";
 //    private static final String file = "D:/projects/simpleSE/logstest.zip";
 
@@ -15,7 +15,7 @@ public class App
         final ZipHandler zipHandler = new ZipHandler();
         final UnzipHandler unzipHandler = new UnzipHandler();
         final FileHandler fileHandler = new FileHandler();
-        final String pathToCut = path.substring(0,path.lastIndexOf("/")+1);
+
 
 
 //        try {
@@ -33,10 +33,10 @@ public class App
 //        }
 
 
-        unzipHandler.unzip(path);
-        fileHandler.addFileToArchive(path,FileHandler.uniquePhones,"phones.txt");
-        fileHandler.addFileToArchive(path,FileHandler.uniqueEmails,"emails.txt");
-        zipHandler.createZipArchive(UnzipHandler.archivesStructure,UnzipHandler.zipWithChildren,pathToCut);
+        unzipHandler.unzip(rootPath,rootPath);
+        fileHandler.addFileToArchive(rootPath,FileHandler.uniquePhones,"phones.txt");
+        fileHandler.addFileToArchive(rootPath,FileHandler.uniqueEmails,"emails.txt");
+        zipHandler.createZipArchive(UnzipHandler.archivesStructure,UnzipHandler.zipWithChildren,rootPath);
 
 
 //        zipHandler.testMethodToCallZip();
@@ -44,7 +44,6 @@ public class App
 //        final File myDir = new File(directory);
 //        final File myFile = new File(file);
 //        archiveHandler.zipFile(myDir,myFile);
-//        archiveHandler.readArchive(path);
 
 
 

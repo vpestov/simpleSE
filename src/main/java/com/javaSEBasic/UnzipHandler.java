@@ -23,19 +23,19 @@ public class UnzipHandler{
 //    public static Deque<ZipEntry> test = new ArrayDeque<ZipEntry>();
 
 
-    public void unzip(String path) {
+    public void unzip(final String currentPath,final String rootPath) {
         Enumeration entries;
         ZipFile zipFile;
         InputStream fileToWrite;
         try {
-            zipFile = new ZipFile(path);
+            zipFile = new ZipFile(currentPath);
             entries = zipFile.entries();
-            archivesStructure.addFirst(path);
+            archivesStructure.addFirst(currentPath);
             ArrayList<String> innerZipContent = new ArrayList<String>();
 
             while (entries.hasMoreElements()) {
                 ZipEntry entry = (ZipEntry) entries.nextElement();
-                String pathToFile = getPathToFile(path) + entry.getName();
+                String pathToFile = getPathToFile(currentPath) + entry.getName();
                 final String extension = getFileExtension(entry.getName());
                 innerZipContent.add(pathToFile);
 
@@ -60,17 +60,18 @@ public class UnzipHandler{
 //                copyInputStream(fileToWrite,
 //                        new BufferedOutputStream(new FileOutputStream(pathToFile)));
             }
-            zipWithChildren.put(path, innerZipContent);
+            zipWithChildren.put(currentPath, innerZipContent);
             zipFile.close();
-
-            deleteExtractedArchive(path);
+            if(!rootPath.equals(currentPath)){
+                deleteExtractedArchive(currentPath);
+            }
 
             if (!tempZipContent.isEmpty()) {
                 for (Iterator<String> innerZipFilePathArray = tempZipContent.iterator(); innerZipFilePathArray.hasNext(); ) {
                     String innerPath = innerZipFilePathArray.next();
                     innerZipFilePathArray.remove();
                     if (("application/x-zip-compressed").equals(getFileExtension(innerPath))) {
-                        unzip(innerPath);
+                        unzip(innerPath,rootPath);
                     } else {
                         unGzip(innerPath);
                     }

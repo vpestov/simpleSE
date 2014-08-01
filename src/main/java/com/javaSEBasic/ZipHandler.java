@@ -23,16 +23,20 @@ public class ZipHandler {
 
     final DeletingFileVisitor delFileVisitor = new DeletingFileVisitor();
 
-    public void createZipArchive(Deque<String> archivesStructure, Map<String, ArrayList<String>> zipWithChildren, String pathToCut) {
+
+    public void createZipArchive(Deque<String> archivesStructure, Map<String, ArrayList<String>> zipWithChildren, String rootPath) {
+        final String pathToCut = rootPath.substring(0, rootPath.lastIndexOf("/")+1);
         for (String currentArchive : archivesStructure) {
-//            final String archiveName = currentArchive.substring(currentArchive.lastIndexOf("/") + 1);
-//            final String archiveName = currentArchive.substring(0,currentArchive.lastIndexOf("/"));
             FileOutputStream outputStream = null;
             ZipOutputStream zos = null;
             final boolean isLastElement = currentArchive.equals(archivesStructure.getLast());
             boolean isGzipArchive = false;
             try {
-                outputStream = new FileOutputStream(currentArchive);
+                if(rootPath.equals(currentArchive)){
+                    outputStream = new FileOutputStream(currentArchive.substring(0, rootPath.lastIndexOf("."))+"2.zip");
+                }else {
+                    outputStream = new FileOutputStream(currentArchive);
+                }
                 zos = new ZipOutputStream(outputStream);
                 if(isGzipArchive=unzipHandler.getFileExtension(currentArchive).equals("application/x-gzip")){
                     gzipFile(currentArchive);
@@ -69,7 +73,6 @@ public class ZipHandler {
 
                 }
             }
-
             moveFileToRealPath(currentArchive,isGzipArchive,isLastElement);
         }
     }
