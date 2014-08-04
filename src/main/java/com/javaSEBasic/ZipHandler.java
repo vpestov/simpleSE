@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,13 +18,11 @@ import java.util.zip.ZipOutputStream;
 public class ZipHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZipHandler.class);
-    final UnzipHandler unzipHandler = new UnzipHandler();
+    private final UnzipHandler unzipHandler = new UnzipHandler();
+    private final DeletingFileVisitor delFileVisitor = new DeletingFileVisitor();
 
-    final DeletingFileVisitor delFileVisitor = new DeletingFileVisitor();
 
-
-    public void createZipArchive(Deque<String> archivesStructure, Map<String, ArrayList<String>> zipWithChildren, String rootPath) {
-        final String pathToCut = rootPath.substring(0, rootPath.lastIndexOf("/")+1);
+    public void createZipArchive(final Deque<String> archivesStructure, final Map<String, ArrayList<String>> zipWithChildren, final String rootPath) {
         for (String currentArchive : archivesStructure) {
             FileOutputStream outputStream = null;
             ZipOutputStream zos = null;
@@ -44,10 +41,8 @@ public class ZipHandler {
                     for (String archiveContent : addInnerZipContent(zipWithChildren.get(currentArchive))) {
                         final File innerFile = new File(archiveContent);
                         if (innerFile.isDirectory()) {
-//                        zipDir(innerFile, zos, pathToCut);
                             zipDir(innerFile, zos, currentArchive.substring(0,currentArchive.lastIndexOf("/")+1));
                         } else {
-//                        zipFile(innerFile, zos, pathToCut);
                             zipFile(innerFile, zos, archiveContent.substring(0,archiveContent.lastIndexOf("/")));
                         }
                     }
@@ -56,7 +51,10 @@ public class ZipHandler {
                 LOGGER.error("Error creating outputStream. File: {} was not found", currentArchive);
             } catch (IOException e) {
                 LOGGER.error("Can't get File extension : {}",currentArchive);
-            } finally {
+            } catch (NullPointerException e){
+                LOGGER.error("Error getting file Extension : {}",currentArchive);
+            }
+            finally {
                 if (zos != null) {
                     try {
                         zos.close();
@@ -78,42 +76,23 @@ public class ZipHandler {
     }
 
     private ArrayList<String> addInnerZipContent(final ArrayList<String> innerContent){
-//        final File currentFile = new File(pathToFile);
         String tempPath="";
         ArrayList<String> filesToZip = new ArrayList<String>();
         for(String currentPath: innerContent){
             boolean isSameDirectory = !"".equals(tempPath);
-//            if(currentPath.length() >= tempPath.length()
-//                    && !tempPath.equals(currentPath.substring(0,tempPath.length()))){
-//                isSameDirectory = false;
-//            }
-            if(currentPath.length() <= tempPath.length()){
-                isSameDirectory = false;
-            }else if (!tempPath.equals(currentPath.substring(0,tempPath.length()))){
+            if(currentPath.length() <= tempPath.length() || !tempPath.equals(currentPath.substring(0,tempPath.length()))){
                 isSameDirectory = false;
             }
             if(!isSameDirectory){
                 filesToZip.add(currentPath);
                 tempPath = currentPath;
             }
-
-//            if("".equals(tempPath) || !tempPath.equals(currentPath.substring(0,tempPath.length()))){
-//                filesToZip.add(currentPath);
-//                tempPath = currentPath;
-//            }
         }
-//        if(currentFile.isDirectory()){
-
         return filesToZip;
-//        }else {
-//            innerContent.add(pathToFile);
-//        }
-
     }
 
-    private void zipDir(File dir, ZipOutputStream zos, String pathToCut){
+    private void zipDir(final File dir, final ZipOutputStream zos, final String pathToCut){
         File[] files = dir.listFiles();
-        byte[] tmpBuf = new byte[1024];
         zipEmptyDir(dir,zos,pathToCut);
         for (File currentFile: files) {
             if (currentFile.isDirectory()) {
@@ -122,20 +101,14 @@ public class ZipHandler {
             }
                 zipFile(currentFile,zos, pathToCut);
         }
-//        if(dir.list().length == 0){
-//            zipEmptyDir(dir, zos, pathToCut);
-//        }
     }
 
-    private void zipFile(File file, ZipOutputStream zos, String pathToCut) {
+    private void zipFile(final File file,final ZipOutputStream zos,final String pathToCut) {
         FileInputStream fileInputStream = null;
         final byte[] buffer = new byte[1024];
         try {
             fileInputStream = new FileInputStream(file);
-//            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace("D:\\testData\\testToZip\\","")));
-//            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace(pathToCut.replace("/","\\"),"")));
             zos.putNextEntry(new ZipEntry((file.getAbsolutePath().replace("\\","/")).replace(pathToCut,"")));
-
             int length;
             while ((length = fileInputStream.read(buffer)) > 0) {
                 zos.write(buffer, 0, length);
@@ -156,31 +129,29 @@ public class ZipHandler {
         }
     }
 
-    private void zipEmptyDir(File file, ZipOutputStream zos, String pathToCut){
+    private void zipEmptyDir(final File file,final ZipOutputStream zos,final String pathToCut){
         try {
-//            zos.putNextEntry(new ZipEntry(file.getAbsolutePath().replace(pathToCut.replace("/","\\"),"") + "/"));
             zos.putNextEntry(new ZipEntry((file.getAbsolutePath().replace("\\","/")).replace(pathToCut,"")+"/"));
-            zos.closeEntry();
         } catch (IOException e) {
             LOGGER.error("Error Adding file : {} to ZipEntry", file.getAbsolutePath());
+        }finally {
+            try {
+                zos.closeEntry();
+            } catch (IOException e) {
+                LOGGER.error("Couldn't close ZipOutputStream : {}",zos);
+            }
         }
     }
 
     private void moveFileToRealPath(final String fromPath, boolean isGzip, boolean isLastElement){
-
         final Path source = Paths.get(fromPath);
         Path fileToDelete;
-
         if(isLastElement){
             fileToDelete = Paths.get(fromPath.substring(0,fromPath.lastIndexOf(".")));
         }else {
             fileToDelete = source.getParent();
         }
-        final Path target = Paths.get(fileToDelete.getParent().toString() + "\\" + source.getFileName().toString());//Paths.get(toPath);
-
-
-//        final String toPath = fromPath.replace(currentArchive.substring(currentArchive.lastIndexOf("/"))+".temp","");
-
+        final Path target = Paths.get(fileToDelete.getParent().toString() + "\\" + source.getFileName().toString());
         try {
             if(!isGzip && !isLastElement){
                 Files.move(source, target);
@@ -191,50 +162,45 @@ public class ZipHandler {
             LOGGER.error("Could not move file : {}",fromPath);
         }
     } 
-    private void gzipFile (String path){
+    private void gzipFile (final String path){
+        FileInputStream fis = null;
+        FileOutputStream fos = null;
+        GZIPOutputStream gzos = null;
         try {
             final Path source = Paths.get(path);
             final String fileName = source.getParent().getParent().toString()+"\\" + source.getFileName();
-            FileInputStream fis = new FileInputStream(path);
-            FileOutputStream fos = new FileOutputStream(fileName);
-            GZIPOutputStream gzos = new GZIPOutputStream(fos);
+            fis = new FileInputStream(path);
+            fos = new FileOutputStream(fileName);
+            gzos = new GZIPOutputStream(fos);
             byte[] buffer = new byte[1024];
             int len;
             while((len=fis.read(buffer)) != -1){
                 gzos.write(buffer, 0, len);
             }
-            gzos.close();
-            fos.close();
-            fis.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Error adding file {} to Gzip", path);
+        }finally {
+            if(gzos != null){
+                try {
+                    gzos.close();
+                } catch (IOException e) {
+                    LOGGER.error("Couldn't close GZIPOutputStream");
+                }
+            }
+            if(fos!=null){
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    LOGGER.error("Couldn't close FileOutputStream");
+                }
+            }
+            if(fis!=null){
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                    LOGGER.error("Couldn't close FileInputStream");
+                }
+            }
         }
-
-
     }
-
-//    public static void copyFile(File sourceFile, File destFile) throws IOException {
-//        if(!destFile.exists()) {
-//            destFile.createNewFile();
-//        }
-//
-//        FileChannel source = null;
-//        FileChannel destination = null;
-//        try {
-//            source = new FileInputStream(sourceFile).getChannel();
-//            destination = new FileOutputStream(destFile).getChannel();
-//
-//            long count = 0;
-//            long size = source.size();
-//            while((count += destination.transferFrom(source, count, size-count))<size);
-//        }
-//        finally {
-//            if(source != null) {
-//                source.close();
-//            }
-//            if(destination != null) {
-//                destination.close();
-//            }
-//        }
-//    }
 }
