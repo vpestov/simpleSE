@@ -15,8 +15,8 @@ public class App
         final UnzipHandler unzipHandler = new UnzipHandler();
         final FileHandler fileHandler = new FileHandler();
 
-//        final String rootPath = args[0];
-        final String rootPath = "D:/testData/inputs.zip";
+        final String rootPath = args[0];
+//        final String rootPath = "D:/projects/simpleSE/inputs.zip";
         if(fileHandler.isZIpFileExists(rootPath)){
             LOGGER.info("Starting application");
             LOGGER.info("Please wait application is in progress");

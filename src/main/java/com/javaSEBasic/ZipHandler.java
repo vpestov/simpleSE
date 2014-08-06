@@ -35,7 +35,7 @@ public class ZipHandler {
                     outputStream = new FileOutputStream(currentArchive);
                 }
                 zos = new ZipOutputStream(outputStream);
-                if(isGzipArchive=unzipHandler.getFileExtension(currentArchive).equals("application/x-gzip")){
+                if(isGzipArchive = unzipHandler.getFileExtension(currentArchive).equals("application/x-gzip")){
                     gzipFile(currentArchive);
                 }else {
                     for (String archiveContent : addInnerZipContent(zipWithChildren.get(currentArchive))) {
@@ -161,16 +161,16 @@ public class ZipHandler {
         catch (IOException e) {
             LOGGER.error("Could not move file : {}",fromPath);
         }
-    } 
+    }
+
     private void gzipFile (final String path){
         FileInputStream fis = null;
         FileOutputStream fos = null;
         GZIPOutputStream gzos = null;
         try {
             final Path source = Paths.get(path);
-            final String fileName = source.getParent().getParent().toString()+"\\" + source.getFileName();
-            fis = new FileInputStream(path);
-            fos = new FileOutputStream(fileName);
+            fis = new FileInputStream(path.substring(0,path.lastIndexOf(".gz")));
+            fos = new FileOutputStream(source.getParent().getParent().toString()+"\\" + source.getFileName());
             gzos = new GZIPOutputStream(fos);
             byte[] buffer = new byte[1024];
             int len;

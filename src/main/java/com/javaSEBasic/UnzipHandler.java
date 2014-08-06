@@ -41,7 +41,6 @@ public class UnzipHandler{
                     (new File(pathToFile + ".temp")).mkdir();
                     pathToFile = pathToFile + ".temp" + "/" + Paths.get(pathToFile).getFileName().toString();
                     tempZipContent.add(pathToFile);
-//TODO: Check difference between copyInputStream and fileHandler.copyFile
                     copyInputStream(zipFile.getInputStream(entry),
                             new BufferedOutputStream(new FileOutputStream(pathToFile)));
                 }

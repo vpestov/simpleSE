@@ -98,8 +98,7 @@ public class FileHandler {
         try {
             Files.write(pathToFile,fileContent, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            //TODO: CHECK IT !!
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+            LOGGER.error("Error creating file : {}", path);
         }
     }
 
